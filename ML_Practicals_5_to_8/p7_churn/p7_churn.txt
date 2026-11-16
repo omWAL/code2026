@@ -1,0 +1,116 @@
+========================================================================
+PRACTICAL 7 : BANK CUSTOMER CHURN (Neural Network)
+========================================================================
+
+AIM
+---
+Build a neural network classifier that predicts whether a bank customer will leave (Exited = 1) or stay (0) in the next 6 months.
+Tasks: read data, split features/target and train/test, normalize, build model, improve it, print accuracy and confusion matrix.
+
+WHAT IS IT? (simple words)
+--------------------------
+Neural network = layers of connected neurons. Each neuron multiplies inputs by weights, adds them, and passes them through an activation (relu). Weights are learned by training (backpropagation).
+Input layer (features) -> Hidden layers -> Output (leave / stay).
+Normalization puts all columns on a similar scale so the network trains well.
+
+WHAT WE DO
+----------
+CSV columns: CustomerId, CreditScore, Geography, Gender, Age, Tenure, Balance, NumOfProducts, HasCrCard, IsActiveMember, EstimatedSalary, Exited
+(20-row sample of the Kaggle Churn_Modelling dataset, which has 10,000 rows.)
+
+STEPS
+1. Read CSV, drop CustomerId, convert Geography and Gender to numbers (one-hot encoding).
+2. Features X = all columns except Exited; target y = Exited. Split 75% / 25%.
+3. Normalize with StandardScaler.
+4. Build a basic network (1 hidden layer, 4 neurons). Improve it: 2 hidden layers (16, 8), more training iterations, regularization (alpha).
+5. Print accuracy and confusion matrix of both.
+
+FILES
+-----
+churn.csv  and  p7_churn.py  (keep both in the same folder, then run: python p7_churn.py)
+
+CODE
+----
+import pandas as pd, warnings
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix
+warnings.filterwarnings("ignore")
+
+# i. Read dataset
+df = pd.read_csv("churn.csv")
+df = df.drop("CustomerId", axis=1)                         # ID is not useful
+df = pd.get_dummies(df, columns=["Geography", "Gender"], drop_first=True)  # text -> numbers
+
+# ii. Features / target and train-test split
+X = df.drop("Exited", axis=1)
+y = df["Exited"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=1, stratify=y)
+
+# iii. Normalize
+sc = StandardScaler()
+X_train = sc.fit_transform(X_train)
+X_test = sc.transform(X_test)
+
+# iv. Build model, then improved model (more neurons, more layers, more epochs, regularization)
+m1 = MLPClassifier(hidden_layer_sizes=(4,), max_iter=200, random_state=1)
+m2 = MLPClassifier(hidden_layer_sizes=(16, 8), max_iter=2000, alpha=0.01, random_state=1)
+
+# v. Accuracy and confusion matrix
+for name, m in [("Basic model", m1), ("Improved model", m2)]:
+    m.fit(X_train, y_train)
+    pred = m.predict(X_test)
+    print(f"\n{name}")
+    print("Accuracy:", round(accuracy_score(y_test, pred), 2))
+    print("Confusion matrix:\n", confusion_matrix(y_test, pred))
+
+SAMPLE OUTPUT
+-------------
+Basic model
+Accuracy: 0.6
+Confusion matrix:
+ [[3 0]
+ [2 0]]
+
+Improved model
+Accuracy: 1.0
+Confusion matrix:
+ [[3 0]
+ [0 2]]
+
+CODE EXPLANATION (simple)
+-------------------------
+- get_dummies turns text columns into 0/1 columns, because networks need numbers.
+- hidden_layer_sizes=(16, 8) means two hidden layers with 16 and 8 neurons.
+- max_iter = number of training rounds (epochs). More rounds = more learning.
+- alpha = regularization, stops the model from memorizing the training data (overfitting).
+- accuracy_score = correct predictions / total predictions.
+- confusion_matrix [[TN FP],[FN TP]] shows which customers were wrongly predicted.
+- Points of improvement used: more neurons/layers, more epochs, regularization. (Others: tune learning rate, add dropout, more data.)
+- Same idea in Keras: Sequential -> Dense layers -> compile -> fit.
+
+VIVA QUESTIONS
+--------------
+Q1. What is a neural network?
+A1. Layers of connected neurons that learn patterns from data.
+Q2. What is an activation function?
+A2. A function (relu, sigmoid) that adds non-linearity to a neuron's output.
+Q3. Why normalize the data?
+A3. So all features are on the same scale and the network trains faster and better.
+Q4. What is one-hot encoding?
+A4. Converting text categories into 0/1 columns.
+Q5. Why drop CustomerId?
+A5. It is just an ID and has no meaning for prediction.
+Q6. What is an epoch?
+A6. One full pass of the training data through the network.
+Q7. What is overfitting?
+A7. Model learns training data too well and performs badly on new data.
+Q8. How can we improve a neural network?
+A8. More layers/neurons, more epochs, tuning learning rate, regularization, more data.
+Q9. What does the confusion matrix show?
+A9. Correct and wrong predictions for stay and leave classes.
+Q10. Which output activation is used for binary classification?
+A10. Sigmoid (gives probability 0 to 1).
+
+========================================================================

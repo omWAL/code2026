@@ -1,0 +1,132 @@
+========================================================================
+PRACTICAL 8 : K-MEANS / HIERARCHICAL CLUSTERING (sales_data_sample.csv)
+========================================================================
+
+AIM
+---
+Implement K-Means clustering (and hierarchical clustering) on sales_data_sample.csv.
+Find the number of clusters using the Elbow method.
+
+WHAT IS IT? (simple words)
+--------------------------
+Clustering = grouping similar data points together WITHOUT labels (unsupervised learning).
+K-Means : choose K, place K centres, assign each point to the nearest centre, move centres to the group average, repeat.
+Elbow method : run K-Means for K = 1,2,3... and plot inertia (sum of squared distances to centres). The bend (elbow) in the graph is the best K.
+Hierarchical : starts with each point as its own cluster and keeps merging the closest ones; shown as a dendrogram.
+
+WHAT WE DO
+----------
+CSV columns: ORDERNUMBER, QUANTITYORDERED, PRICEEACH, SALES, MSRP, PRODUCTLINE, COUNTRY (20-row sample of the Kaggle sales_data_sample.csv).
+We use QUANTITYORDERED, PRICEEACH and SALES for clustering.
+
+STEPS
+1. Read CSV, pick numeric columns, scale them.
+2. Elbow method: K-Means for K = 1 to 8, print/plot inertia.
+3. Choose K at the elbow (K = 3 here), run K-Means, add a Cluster column.
+4. Show cluster sizes and average values.
+5. Hierarchical: draw dendrogram and run AgglomerativeClustering with 3 clusters.
+
+FILES
+-----
+sales_data_sample.csv  and  p8_sales.py  (keep both in the same folder, then run: python p8_sales.py)
+
+CODE
+----
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans, AgglomerativeClustering
+from scipy.cluster.hierarchy import linkage, dendrogram
+
+df = pd.read_csv("sales_data_sample.csv")
+cols = ["QUANTITYORDERED", "PRICEEACH", "SALES"]
+X = StandardScaler().fit_transform(df[cols])      # scale the data
+
+# Elbow method: find inertia (error) for k = 1 to 8
+inertia = []
+for k in range(1, 9):
+    inertia.append(KMeans(n_clusters=k, n_init=10, random_state=1).fit(X).inertia_)
+    print("k =", k, " inertia =", round(inertia[-1], 2))
+plt.plot(range(1, 9), inertia, marker="o")
+plt.title("Elbow Method"); plt.xlabel("Number of clusters (k)"); plt.ylabel("Inertia")
+plt.show()
+
+# K-Means with the k seen at the elbow
+km = KMeans(n_clusters=3, n_init=10, random_state=1)
+df["Cluster"] = km.fit_predict(X)
+print("\nOrders in each cluster:\n", df["Cluster"].value_counts().sort_index())
+print("\nAverage values per cluster:\n", df.groupby("Cluster")[cols].mean().round(1))
+
+# Hierarchical clustering (dendrogram + clusters)
+dendrogram(linkage(X, method="ward"))
+plt.title("Dendrogram"); plt.show()
+df["HC_Cluster"] = AgglomerativeClustering(n_clusters=3).fit_predict(X)
+print("\nHierarchical cluster sizes:\n", df["HC_Cluster"].value_counts().sort_index())
+
+SAMPLE OUTPUT
+-------------
+k = 1  inertia = 60.0
+k = 2  inertia = 16.38
+k = 3  inertia = 1.29
+k = 4  inertia = 0.88
+k = 5  inertia = 0.65
+k = 6  inertia = 0.43
+k = 7  inertia = 0.3
+k = 8  inertia = 0.23
+
+Orders in each cluster:
+ Cluster
+0    6
+1    7
+2    7
+Name: count, dtype: int64
+
+Average values per cluster:
+          QUANTITYORDERED  PRICEEACH   SALES
+Cluster                                    
+0                   58.5      126.3  7386.1
+1                   25.1       54.7  1378.7
+2                   41.9       94.4  3953.0
+
+Hierarchical cluster sizes:
+ HC_Cluster
+0    7
+1    6
+2    7
+Name: count, dtype: int64
+
+CODE EXPLANATION (simple)
+-------------------------
+- StandardScaler scales the columns because K-Means uses distance.
+- inertia_ = total squared distance of points to their cluster centre. Smaller = tighter clusters.
+- Inertia drops sharply up to K=3 and then flattens slowly, so the elbow is at K = 3.
+- fit_predict() runs K-Means and returns the cluster number of each row.
+- groupby("Cluster").mean() shows the type of customers in each cluster (small / medium / big orders).
+- linkage(method="ward") + dendrogram() draws the hierarchical tree.
+- AgglomerativeClustering(n_clusters=3) gives the cluster of each row from the hierarchical method.
+- plt.show() displays the graphs (in the lab, the elbow graph and dendrogram will pop up).
+
+VIVA QUESTIONS
+--------------
+Q1. What is clustering?
+A1. Grouping similar data without labels (unsupervised learning).
+Q2. Supervised vs unsupervised learning?
+A2. Supervised uses labels (classification/regression); unsupervised has no labels (clustering).
+Q3. How does K-Means work?
+A3. Choose K centres, assign points to nearest centre, update centres, repeat until stable.
+Q4. What is the elbow method?
+A4. Plot inertia vs K and pick K where the curve bends like an elbow.
+Q5. What is inertia?
+A5. Sum of squared distances of points from their cluster centre.
+Q6. Why scale data before K-Means?
+A6. K-Means uses distance, so large-valued columns would dominate.
+Q7. What is a dendrogram?
+A7. A tree diagram showing how clusters are merged in hierarchical clustering.
+Q8. K-Means vs Hierarchical?
+A8. K-Means needs K in advance and is faster; hierarchical gives a full tree and does not need K first.
+Q9. Disadvantage of K-Means?
+A9. Must choose K, sensitive to outliers and to starting centres.
+Q10. What is ward linkage?
+A10. Merges the clusters that increase the total variance the least.
+
+========================================================================

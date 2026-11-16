@@ -1,0 +1,114 @@
+========================================================================
+PRACTICAL 6 : EMAIL SPAM DETECTION (KNN and SVM)
+========================================================================
+
+AIM
+---
+Classify an email as Spam or Not Spam using binary classification.
+Use K-Nearest Neighbors (KNN) and Support Vector Machine (SVM) and compare their performance.
+
+WHAT IS IT? (simple words)
+--------------------------
+Classification = predicting a CATEGORY. Binary = only 2 classes: 0 = Not Spam (normal), 1 = Spam (abnormal).
+KNN : looks at the K closest emails (K=3) and takes a majority vote.
+SVM : finds the best line/boundary that separates spam from normal emails with the widest gap.
+Performance: Accuracy, Precision, Recall, Confusion matrix.
+
+WHAT WE DO
+----------
+CSV columns: word_count, free_count, link_count, exclamation_count, capital_words, label (20 rows, 10 spam / 10 not spam).
+These are features taken from email text (counts of spam-like words, links, '!' etc.).
+
+STEPS
+1. Read CSV, separate features X and label y.
+2. Split 70% train / 30% test.
+3. Scale the features (KNN and SVM depend on distance, so scaling is needed).
+4. Train KNN and SVM.
+5. Print accuracy, precision, recall and confusion matrix for both.
+
+FILES
+-----
+spam.csv  and  p6_spam.py  (keep both in the same folder, then run: python p6_spam.py)
+
+CODE
+----
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
+
+df = pd.read_csv("spam.csv")                 # label: 1 = Spam, 0 = Not Spam
+X = df.drop("label", axis=1)
+y = df["label"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1, stratify=y)
+
+sc = StandardScaler()                        # scale features (needed for KNN and SVM)
+X_train = sc.fit_transform(X_train)
+X_test = sc.transform(X_test)
+
+models = {"KNN": KNeighborsClassifier(n_neighbors=3),
+          "SVM": SVC(kernel="linear")}
+for name, m in models.items():
+    m.fit(X_train, y_train)
+    pred = m.predict(X_test)
+    print(f"\n{name}")
+    print("Accuracy :", round(accuracy_score(y_test, pred), 2))
+    print("Precision:", round(precision_score(y_test, pred), 2))
+    print("Recall   :", round(recall_score(y_test, pred), 2))
+    print("Confusion matrix:\n", confusion_matrix(y_test, pred))
+
+SAMPLE OUTPUT
+-------------
+KNN
+Accuracy : 1.0
+Precision: 1.0
+Recall   : 1.0
+Confusion matrix:
+ [[3 0]
+ [0 3]]
+
+SVM
+Accuracy : 1.0
+Precision: 1.0
+Recall   : 1.0
+Confusion matrix:
+ [[3 0]
+ [0 3]]
+
+CODE EXPLANATION (simple)
+-------------------------
+- X = all columns except label, y = label column.
+- stratify=y keeps the same spam/not-spam ratio in train and test.
+- StandardScaler: fit_transform on train, only transform on test (no peeking at test data).
+- KNeighborsClassifier(n_neighbors=3): vote of 3 nearest emails.
+- SVC(kernel="linear"): straight-line boundary.
+- Confusion matrix [[TN FP],[FN TP]]: diagonal = correct predictions.
+- Precision = of emails predicted spam, how many really are spam. Recall = of all real spam, how many we caught.
+- Dataset is tiny (6 test rows), so scores are high; on a big real dataset they differ.
+
+VIVA QUESTIONS
+--------------
+Q1. What is binary classification?
+A1. Classifying data into 2 classes, here Spam and Not Spam.
+Q2. How does KNN work?
+A2. It finds the K nearest points and predicts the majority class.
+Q3. How does SVM work?
+A3. It finds the boundary (hyperplane) with the maximum margin between the 2 classes.
+Q4. Why do we scale the data?
+A4. KNN and SVM use distances; big-valued columns would dominate.
+Q5. What is a confusion matrix?
+A5. A table of correct and wrong predictions: TN, FP, FN, TP.
+Q6. Precision vs Recall?
+A6. Precision = TP/(TP+FP); Recall = TP/(TP+FN).
+Q7. Which is worse in spam detection: FP or FN?
+A7. FP (a good email marked spam) is usually worse.
+Q8. What does K mean in KNN?
+A8. Number of neighbours used for voting.
+Q9. What is a kernel in SVM?
+A9. A function that lets SVM draw curved boundaries (linear, rbf, poly).
+Q10. Why fit scaler only on train data?
+A10. To avoid data leakage from test data.
+
+========================================================================

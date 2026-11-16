@@ -1,0 +1,600 @@
+==========================================================================
+        DAA PRACTICAL NOTES (Language: C++)  -  SIMPLE WORDS
+        1. Fibonacci + Step Count
+        2. Job Sequencing with Deadlines (Greedy)
+        3. Fractional Knapsack (Greedy)
+        4. 0-1 Knapsack (Dynamic Programming)
+==========================================================================
+
+
+##########################################################################
+PRACTICAL 1 : FIBONACCI NUMBERS AND STEP COUNT
+##########################################################################
+
+AIM
+---
+Write a program to calculate Fibonacci numbers and find its step count.
+
+WHAT IS IT? (simple words)
+--------------------------
+Fibonacci series: every number is the sum of the two numbers before it.
+    0 1 1 2 3 5 8 13 21 ...
+Formula: F(n) = F(n-1) + F(n-2),  F(0) = 0,  F(1) = 1
+
+Step count = how many steps (operations) the program takes. More steps
+means slower program. We use it to compare algorithms.
+
+CONCEPT
+-------
+We solve it in 2 ways and count the steps:
+ (a) Iterative (using loop)   -> n steps       -> Time O(n)   (fast)
+ (b) Recursive (function calls itself) -> many steps -> Time O(2^n) (slow)
+Recursion is slow because it calculates the same value again and again.
+
+ALGORITHM (Iterative)
+---------------------
+1. a = 0, b = 1, steps = 0
+2. Repeat n times:
+      print a
+      next = a + b
+      a = b
+      b = next
+      steps++
+3. Print steps.
+
+ALGORITHM (Recursive)
+---------------------
+1. fib(n): increase count by 1 (one call = one step)
+2. If n <= 1, return n
+3. Otherwise return fib(n-1) + fib(n-2)
+
+APPLICATION
+-----------
+- Comparing speed of recursion and loop
+- Fibonacci heap and Fibonacci search
+- Patterns in nature (flower petals, shells)
+
+CODE (C++)
+----------
+#include <iostream>
+using namespace std;
+
+int cnt = 0;                    // counts steps of recursive function
+
+int fibRec(int n)
+{
+    cnt++;                      // one step for every call
+    if (n <= 1)
+        return n;
+    return fibRec(n - 1) + fibRec(n - 2);
+}
+
+int main()
+{
+    int n;
+    cout << "Enter n: ";
+    cin >> n;
+
+    // ---------- Iterative method ----------
+    int a = 0, b = 1, steps = 0;
+    cout << "Iterative series : ";
+    for (int i = 0; i < n; i++)
+    {
+        cout << a << " ";
+        int next = a + b;
+        a = b;
+        b = next;
+        steps++;
+    }
+    cout << "\nIterative steps  : " << steps << endl;
+
+    // ---------- Recursive method ----------
+    int result = fibRec(n);
+    cout << "Recursive F(" << n << ") = " << result << endl;
+    cout << "Recursive steps  : " << cnt << endl;
+
+    return 0;
+}
+
+SAMPLE OUTPUT (n = 5)
+---------------------
+Enter n: 5
+Iterative series : 0 1 1 2 3
+Iterative steps  : 5
+Recursive F(5) = 5
+Recursive steps  : 15
+
+CODE EXPLANATION (simple)
+-------------------------
+- cnt is a global variable. Every time fibRec is called, cnt increases
+  by 1. So at the end cnt = total number of calls = steps.
+- In the loop, a and b keep the last two numbers. We print a, then move
+  forward: a becomes b, and b becomes a+b.
+- steps++ runs once per loop, so steps = n.
+- fibRec calls itself two times (n-1 and n-2), so calls grow very fast.
+  For n=5 it makes 15 calls, but the loop needs only 5 steps.
+
+VIVA QUESTIONS
+--------------
+Q1. What is Fibonacci series?
+A1. A series where each number is the sum of the previous two.
+Q2. What is step count?
+A2. Number of operations an algorithm performs; used to find time
+    complexity.
+Q3. Time complexity of iterative and recursive Fibonacci?
+A3. Iterative O(n), recursive O(2^n).
+Q4. Why is recursive Fibonacci slow?
+A4. It solves the same smaller problems again and again.
+Q5. How can we make it faster?
+A5. Use Dynamic Programming or memoization (store answers) -> O(n).
+Q6. What is the base case?
+A6. F(0) = 0 and F(1) = 1.
+Q7. What is recursion?
+A7. A function calling itself.
+
+
+##########################################################################
+PRACTICAL 2 : JOB SEQUENCING WITH DEADLINES (GREEDY METHOD)
+##########################################################################
+
+AIM
+---
+Implement job sequencing with deadlines using a greedy method.
+
+WHAT IS IT? (simple words)
+--------------------------
+We have some jobs. Every job has a DEADLINE (last time it can be done)
+and a PROFIT (money earned). Every job takes 1 unit of time and we can
+do only one job at a time. A job gives profit only if finished before
+or on its deadline.
+Goal: choose jobs so that we earn the MAXIMUM TOTAL PROFIT.
+
+CONCEPT
+-------
+Greedy method = always pick the best choice available right now.
+Here the best choice = job with highest profit. We put it in the LATEST
+free time slot before its deadline, so earlier slots stay free for
+other jobs.
+
+ALGORITHM
+---------
+1. Sort jobs by profit (highest first).
+2. Find the maximum deadline. Make that many empty slots.
+3. For each job in sorted order:
+      look at slots from its deadline going down to 1
+      if a slot is empty -> put the job there, add profit, stop looking
+      if no slot is empty -> skip the job
+4. Print scheduled jobs and total profit.
+
+APPLICATION
+-----------
+- CPU / task scheduling in operating system
+- Scheduling work in factories and projects
+- Delivery or ad scheduling with deadlines
+
+CODE (C++)
+----------
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <string>
+using namespace std;
+
+struct Job
+{
+    string id;
+    int deadline;
+    int profit;
+};
+
+// compare function: higher profit comes first
+bool compareProfit(Job a, Job b)
+{
+    return a.profit > b.profit;
+}
+
+int main()
+{
+    vector<Job> jobs = {
+        {"J1", 2, 100},
+        {"J2", 1, 19},
+        {"J3", 2, 27},
+        {"J4", 1, 25},
+        {"J5", 3, 15}
+    };
+
+    // Step 1: sort by profit (highest first)
+    sort(jobs.begin(), jobs.end(), compareProfit);
+
+    // Step 2: find max deadline and make empty slots
+    int maxDeadline = 0;
+    for (int i = 0; i < jobs.size(); i++)
+        if (jobs[i].deadline > maxDeadline)
+            maxDeadline = jobs[i].deadline;
+
+    vector<string> slot(maxDeadline + 1, "");   // "" means empty
+    int totalProfit = 0;
+
+    // Step 3: place each job in latest free slot
+    for (int i = 0; i < jobs.size(); i++)
+    {
+        for (int t = jobs[i].deadline; t >= 1; t--)
+        {
+            if (slot[t] == "")
+            {
+                slot[t] = jobs[i].id;
+                totalProfit += jobs[i].profit;
+                break;
+            }
+        }
+    }
+
+    cout << "Job sequence : ";
+    for (int t = 1; t <= maxDeadline; t++)
+        if (slot[t] != "")
+            cout << slot[t] << " ";
+
+    cout << "\nTotal profit : " << totalProfit << endl;
+    return 0;
+}
+
+SAMPLE OUTPUT
+-------------
+Job sequence : J3 J1 J5
+Total profit : 142
+
+CODE EXPLANATION (simple)
+-------------------------
+- struct Job keeps id, deadline and profit of one job together.
+- compareProfit tells sort() to put higher profit first.
+- slot is like a timetable: slot[1], slot[2], slot[3]. Empty = free.
+- For each job we start from its deadline and move backward to find a
+  free slot. If found, we place the job and add its profit.
+- Example: J1 (profit 100, deadline 2) goes to slot 2.
+           J3 (27, deadline 2): slot 2 full, so slot 1.
+           J4 and J2 (deadline 1): slot 1 full, so rejected.
+           J5 (15, deadline 3) goes to slot 3.
+  Total = 100 + 27 + 15 = 142.
+
+VIVA QUESTIONS
+--------------
+Q1. What is the greedy method?
+A1. At every step choose the best option available now, without
+    thinking about the future.
+Q2. What do we maximize in job sequencing?
+A2. Total profit.
+Q3. How much time does each job take?
+A3. One unit of time.
+Q4. Time complexity?
+A4. O(n^2) in worst case. Sorting alone is O(n log n).
+Q5. Why sort by profit?
+A5. To schedule the most profitable jobs first.
+Q6. Why put a job in the latest free slot?
+A6. To keep earlier slots free for jobs with early deadlines.
+Q7. What happens to a job if no slot is free?
+A7. It is rejected (skipped).
+
+
+##########################################################################
+PRACTICAL 3 : FRACTIONAL KNAPSACK (GREEDY METHOD)
+##########################################################################
+
+AIM
+---
+Write a program to solve a fractional Knapsack problem using a greedy
+method.
+
+WHAT IS IT? (simple words)
+--------------------------
+We have a bag with a weight limit W. We have some items; each item has a
+weight and a value. We want to fill the bag to get the MAXIMUM VALUE.
+In FRACTIONAL knapsack we can take a PART of an item (like half a kg of
+sugar from a 1 kg packet).
+
+CONCEPT
+-------
+Greedy method: find value/weight ratio (value per kg) of each item.
+Take the item with the highest ratio first. If the full item does not
+fit, take only the part that fits and stop.
+
+ALGORITHM
+---------
+1. For each item calculate ratio = value / weight.
+2. Sort items by ratio (highest first).
+3. For each item in order:
+      if whole item fits in remaining space:
+           take it fully, reduce space, add its value
+      else:
+           take fraction = remaining space / item weight
+           add value * fraction, then stop (bag is full)
+4. Print total value.
+
+APPLICATION
+-----------
+- Loading goods that can be divided (grains, liquids, oil)
+- Resource and bandwidth allocation
+- Investing money in divisible things
+
+CODE (C++)
+----------
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <iomanip>
+using namespace std;
+
+struct Item
+{
+    int weight;
+    int value;
+    double ratio;       // value per weight
+};
+
+// compare function: higher ratio comes first
+bool compareRatio(Item a, Item b)
+{
+    return a.ratio > b.ratio;
+}
+
+int main()
+{
+    int W = 50;         // capacity of knapsack
+    vector<Item> items = {
+        {10, 60, 0},
+        {20, 100, 0},
+        {30, 120, 0}
+    };
+
+    // Step 1: calculate ratio of each item
+    for (int i = 0; i < items.size(); i++)
+        items[i].ratio = (double)items[i].value / items[i].weight;
+
+    // Step 2: sort by ratio (highest first)
+    sort(items.begin(), items.end(), compareRatio);
+
+    double totalValue = 0;
+    int remaining = W;
+
+    // Step 3: pick items
+    for (int i = 0; i < items.size(); i++)
+    {
+        if (items[i].weight <= remaining)
+        {
+            // take full item
+            totalValue += items[i].value;
+            remaining -= items[i].weight;
+            cout << "Took full item : weight " << items[i].weight
+                 << " value " << items[i].value << endl;
+        }
+        else
+        {
+            // take only fraction and stop
+            double fraction = (double)remaining / items[i].weight;
+            totalValue += items[i].value * fraction;
+            cout << fixed << setprecision(2);
+            cout << "Took fraction  : " << fraction
+                 << " of item weight " << items[i].weight << endl;
+            break;
+        }
+    }
+
+    cout << fixed << setprecision(2);
+    cout << "Maximum value in knapsack = " << totalValue << endl;
+    return 0;
+}
+
+SAMPLE OUTPUT
+-------------
+Took full item : weight 10 value 60
+Took full item : weight 20 value 100
+Took fraction  : 0.67 of item weight 30
+Maximum value in knapsack = 240.00
+
+CODE EXPLANATION (simple)
+-------------------------
+- struct Item stores weight, value and ratio of an item.
+- We calculate ratio = value / weight. (double) is used so the answer
+  has decimals (60/10 = 6.0 and not integer division).
+- sort() with compareRatio puts the best value-per-kg item first.
+- In the loop: if the item fits, take all of it. If not, take only the
+  fraction (remaining space / weight) and break.
+- Here: ratios are 6, 5, 4. Take items 1 and 2 fully (weight 30, value
+  160). Remaining space = 20, so take 20/30 of item 3 = 80 value.
+  Total = 160 + 80 = 240.
+
+VIVA QUESTIONS
+--------------
+Q1. Difference between fractional and 0-1 knapsack?
+A1. Fractional: we can take part of an item (greedy works).
+    0-1: take whole item or nothing (needs dynamic programming).
+Q2. On what basis do we sort the items?
+A2. Value/weight ratio, highest first.
+Q3. Time complexity?
+A3. O(n log n), because of sorting.
+Q4. Is greedy always optimal for fractional knapsack?
+A4. Yes.
+Q5. Is greedy always optimal for 0-1 knapsack?
+A5. No.
+Q6. What is the objective?
+A6. Get maximum value without crossing the weight limit W.
+
+
+##########################################################################
+PRACTICAL 4 : 0-1 KNAPSACK (DYNAMIC PROGRAMMING)
+##########################################################################
+
+AIM
+---
+Write a program to solve a 0-1 Knapsack problem using dynamic
+programming.
+
+WHAT IS IT? (simple words)
+--------------------------
+Same bag and items, but now we must take an item COMPLETELY or NOT AT
+ALL (0 = leave it, 1 = take it). We cannot cut an item.
+Goal: maximum total value within the weight limit W.
+
+CONCEPT
+-------
+Dynamic Programming (DP): solve small problems first, write their
+answers in a table, and use that table to solve bigger problems. No
+work is repeated.
+
+dp[i][w] = best value using first i items when bag capacity is w.
+
+For every item we have 2 choices:
+   Take it   : value of item + dp[i-1][w - weight of item]
+   Leave it  : dp[i-1][w]
+We keep the bigger one. If the item is heavier than w, we cannot take it.
+
+ALGORITHM
+---------
+1. Make table dp of size (n+1) x (W+1), fill with 0.
+2. For i = 1 to n:
+      For w = 0 to W:
+          if weight[i] <= w:
+               dp[i][w] = max(value[i] + dp[i-1][w - weight[i]], dp[i-1][w])
+          else:
+               dp[i][w] = dp[i-1][w]
+3. Answer = dp[n][W].
+4. To know which items were taken: start at dp[n][W] and go up; if
+   dp[i][w] != dp[i-1][w], item i was taken; then reduce w by its weight.
+
+APPLICATION
+-----------
+- Choosing projects within a fixed budget
+- Loading cargo (items can't be split)
+- Investment / portfolio selection
+
+CODE (C++)
+----------
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int main()
+{
+    int weight[] = {10, 20, 30};
+    int value[]  = {60, 100, 120};
+    int W = 50;                         // capacity
+    int n = 3;                          // number of items
+
+    // Step 1: create table filled with 0
+    vector< vector<int> > dp(n + 1, vector<int>(W + 1, 0));
+
+    // Step 2: fill the table
+    for (int i = 1; i <= n; i++)
+    {
+        for (int w = 0; w <= W; w++)
+        {
+            if (weight[i - 1] <= w)
+            {
+                int take  = value[i - 1] + dp[i - 1][w - weight[i - 1]];
+                int leave = dp[i - 1][w];
+                dp[i][w] = max(take, leave);
+            }
+            else
+            {
+                dp[i][w] = dp[i - 1][w];
+            }
+        }
+    }
+
+    cout << "Maximum value = " << dp[n][W] << endl;
+
+    // Step 3: find which items were selected
+    vector<int> selected;
+    int w = W;
+    for (int i = n; i >= 1; i--)
+    {
+        if (dp[i][w] != dp[i - 1][w])
+        {
+            selected.push_back(i);
+            w -= weight[i - 1];
+        }
+    }
+    reverse(selected.begin(), selected.end());
+
+    cout << "Selected items (item no.) : ";
+    for (int i = 0; i < selected.size(); i++)
+        cout << selected[i] << " ";
+
+    cout << "\nTheir weights             : ";
+    for (int i = 0; i < selected.size(); i++)
+        cout << weight[selected[i] - 1] << " ";
+
+    cout << "\nTheir values              : ";
+    for (int i = 0; i < selected.size(); i++)
+        cout << value[selected[i] - 1] << " ";
+
+    cout << endl;
+    return 0;
+}
+
+SAMPLE OUTPUT
+-------------
+Maximum value = 220
+Selected items (item no.) : 2 3
+Their weights             : 20 30
+Their values              : 100 120
+
+CODE EXPLANATION (simple)
+-------------------------
+- dp is a 2D table. Row = how many items we have considered, column =
+  bag capacity. First row and first column are 0 (nothing to put or no
+  space = value 0).
+- For each cell we compare "take the item" and "leave the item" and
+  store the bigger value.
+- If the item is too heavy for that capacity, we just copy the value
+  from the row above.
+- The last cell dp[n][W] is the answer (220).
+- Backtracking: if the cell value is different from the cell above it,
+  that item was taken. We then reduce the capacity by its weight and
+  continue upward.
+- (weight[i-1] is used because C++ arrays start at 0 but our table rows
+  start from 1.)
+
+VIVA QUESTIONS
+--------------
+Q1. What is dynamic programming?
+A1. Solving a big problem by solving small overlapping problems once
+    and storing their answers in a table.
+Q2. Why can't we use greedy for 0-1 knapsack?
+A2. Items can't be cut, so greedy may give a wrong (non-optimal)
+    answer. Here greedy by ratio gives 160, but DP gives 220.
+Q3. Time and space complexity?
+A3. Both O(n x W).
+Q4. What does dp[i][w] mean?
+A4. Maximum value using the first i items with capacity w.
+Q5. Name another method to solve 0-1 knapsack.
+A5. Branch and Bound (or recursion with memoization).
+Q6. Difference between DP and greedy?
+A6. Greedy takes one choice at each step and never changes it. DP checks
+    all possibilities using a table and picks the best.
+Q7. What are the two choices for each item?
+A7. Take the item or leave the item.
+Q8. What is optimal substructure?
+A8. Best answer of the big problem is built from best answers of
+    smaller problems.
+
+
+==========================================================================
+QUICK COMPLEXITY TABLE (for revision)
+==========================================================================
+Fibonacci iterative       : Time O(n)          Space O(1)
+Fibonacci recursive       : Time O(2^n)        Space O(n)
+Job sequencing (greedy)   : Time O(n^2)        Space O(n)
+Fractional knapsack       : Time O(n log n)    Space O(n)
+0-1 knapsack (DP)         : Time O(n x W)      Space O(n x W)
+
+HOW TO COMPILE AND RUN (C++)
+----------------------------
+   g++ filename.cpp -o output
+   ./output            (Linux)    or    output.exe   (Windows)
+
+NOTE: If your compiler is old, add  -std=c++11  while compiling, because
+the code uses  vector<Job> jobs = { {...}, {...} };
+
+                     ALL THE BEST FOR YOUR PRACTICAL EXAM!
+==========================================================================

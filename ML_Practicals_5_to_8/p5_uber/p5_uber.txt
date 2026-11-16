@@ -1,0 +1,144 @@
+========================================================================
+PRACTICAL 5 : UBER FARE PREDICTION (Linear Regression + Random Forest)
+========================================================================
+
+AIM
+---
+Predict the price of an Uber ride from pickup point to drop-off point.
+Tasks: pre-process, find outliers, check correlation, build Linear Regression and Random Forest, compare R2 and RMSE.
+
+WHAT IS IT? (simple words)
+--------------------------
+Regression = predicting a NUMBER (here: fare amount).
+Linear Regression : draws the best straight line through the data (fare = a x distance + b).
+Random Forest     : many decision trees; the average of all trees is the answer.
+R2   : how well the model fits (1 = perfect, near 0 = poor). Higher is better.
+RMSE : average size of the error in dollars. Lower is better.
+
+WHAT WE DO
+----------
+CSV columns: pickup/dropoff latitude and longitude, passenger_count, fare_amount (20 rows).
+The CSV has 1 missing value and 1 outlier (fare 180) on purpose, so you can show pre-processing.
+
+STEPS
+1. Read CSV and check missing values.
+2. Pre-process: drop missing rows, create distance_km from the 4 coordinates.
+3. Outliers: IQR rule (values far outside Q1 - 1.5*IQR to Q3 + 1.5*IQR) are removed.
+4. Correlation: check which column affects fare most.
+5. Split data 80% train / 20% test, train both models.
+6. Print R2, RMSE, MAE and compare.
+
+FILES
+-----
+uber.csv  and  p5_uber.py  (keep both in the same folder, then run: python p5_uber.py)
+
+CODE
+----
+import pandas as pd, numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+
+df = pd.read_csv("uber.csv")
+print("Missing values:\n", df.isnull().sum())
+
+# i. Pre-process: remove missing rows, make a distance column
+df = df.dropna()
+def distance(lat1, lon1, lat2, lon2):          # haversine formula (km)
+    p = np.pi / 180
+    a = 0.5 - np.cos((lat2-lat1)*p)/2 + np.cos(lat1*p)*np.cos(lat2*p)*(1-np.cos((lon2-lon1)*p))/2
+    return 2 * 6371 * np.arcsin(np.sqrt(a))
+df["distance_km"] = distance(df.pickup_latitude, df.pickup_longitude,
+                             df.dropoff_latitude, df.dropoff_longitude)
+
+# ii. Outliers using IQR rule
+q1, q3 = df.fare_amount.quantile([0.25, 0.75])
+iqr = q3 - q1
+out = df[(df.fare_amount < q1 - 1.5*iqr) | (df.fare_amount > q3 + 1.5*iqr)]
+print("\nOutliers found:", len(out))
+df = df.drop(out.index)
+
+# iii. Correlation
+print("\nCorrelation:\n", df[["passenger_count", "distance_km", "fare_amount"]].corr().round(2))
+
+# iv. Models
+X = df[["distance_km", "passenger_count"]]
+y = df["fare_amount"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
+models = {"Linear Regression": LinearRegression(),
+          "Random Forest": RandomForestRegressor(n_estimators=100, random_state=1)}
+
+# v. Evaluate
+for name, m in models.items():
+    m.fit(X_train, y_train)
+    pred = m.predict(X_test)
+    print(f"\n{name}")
+    print("R2   :", round(r2_score(y_test, pred), 3))
+    print("RMSE :", round(np.sqrt(mean_squared_error(y_test, pred)), 3))
+    print("MAE  :", round(mean_absolute_error(y_test, pred), 3))
+
+SAMPLE OUTPUT
+-------------
+Missing values:
+ pickup_latitude      0
+pickup_longitude     0
+dropoff_latitude     0
+dropoff_longitude    1
+passenger_count      0
+fare_amount          0
+dtype: int64
+
+Outliers found: 1
+
+Correlation:
+                  passenger_count  distance_km  fare_amount
+passenger_count             1.00        -0.17        -0.16
+distance_km                -0.17         1.00         0.99
+fare_amount                -0.16         0.99         1.00
+
+Linear Regression
+R2   : 0.939
+RMSE : 0.348
+MAE  : 0.299
+
+Random Forest
+R2   : 0.906
+RMSE : 0.432
+MAE  : 0.369
+
+CODE EXPLANATION (simple)
+-------------------------
+- dropna() removes rows with missing values.
+- distance() is the haversine formula: converts 2 lat/long points into km.
+- IQR: Q1 = 25th percentile, Q3 = 75th percentile, IQR = Q3 - Q1. Anything outside the limits is an outlier.
+- corr() shows the relation of columns (-1 to +1). distance_km vs fare is close to +1, so distance is the main factor.
+- train_test_split keeps 20% data hidden for testing the model.
+- fit() trains the model, predict() gives fares for test rows.
+- r2_score, mean_squared_error (RMSE = its square root), mean_absolute_error measure the model.
+- Compare: higher R2 and lower RMSE = better model. (Dataset is tiny; on the real Kaggle file Random Forest usually wins.)
+
+VIVA QUESTIONS
+--------------
+Q1. What is regression?
+A1. Predicting a continuous number, like fare or price.
+Q2. Why remove outliers?
+A2. Extreme values pull the model line and give wrong predictions.
+Q3. What is the IQR rule?
+A3. Outlier if value < Q1 - 1.5*IQR or > Q3 + 1.5*IQR.
+Q4. What does correlation tell us?
+A4. How strongly two columns move together (-1 to +1).
+Q5. What is R2 score?
+A5. Fraction of variation the model explains; closer to 1 is better.
+Q6. What is RMSE?
+A6. Square root of the average squared error; lower is better.
+Q7. How does Random Forest work?
+A7. It builds many decision trees on random parts of data and averages their answers.
+Q8. Why do we split data into train and test?
+A8. To check the model on data it has not seen before.
+Q9. Why create the distance column?
+A9. Fare depends on distance, but raw latitude/longitude do not show it directly.
+Q10. Linear Regression vs Random Forest?
+A10. Linear fits a straight line (simple, fast); Random Forest handles curves and complex patterns but is slower.
+
+========================================================================
